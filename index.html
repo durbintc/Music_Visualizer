@@ -193,22 +193,77 @@
 </div>
 
 <div class="controls">
-    <h2>🎨 What's Happening</h2>
-    <h3>Audio Processing</h3>
-    <p>The visualizer captures audio from Spotify using the Web Playback SDK and Web Audio API. 
-    The audio is analyzed into 512 frequency bins every 32ms, then divided into three ranges:</p>
+<h1>What's Happening</h1>
+
+<div>
+    <h2>Collecting Input</h2>
+    <p>This program plays an MP3 file from the HTML file, then uses the music data from that to make the textures</p>
+
+    <p>This project uses Web Audio API to capture audio data from the audio that it hears. it splits is up by frequency
+        into a 512 length array every frame (30 fps) that can be used by the program</p>
+</div>
+
+<div>
+    <h2>Processing Audio Data</h2>
+    <p>The frequency data is divided into three ranges:</p>
     <ul>
-        <li><strong>Bass (0-100):</strong> Drives large, sweeping movements</li>
-        <li><strong>Mid (100-200):</strong> Controls flowing details and melody</li>
-        <li><strong>High (200-300):</strong> Creates fine texture and energy</li>
+        <li>Bass (indices 0-100)</li>
+        <li>Mid (100-200)</li>
+        <li>High (200-300)</li>
     </ul>
-    
-    <h3>Three Real-Time Textures</h3>
-    <ul>
-        <li><strong>Left:</strong> Marble texture using Perlin noise turbulence</li>
-        <li><strong>Center:</strong> Raw octave visualization (RGB = bass/mid/high)</li>
-        <li><strong>Right:</strong> Classic frequency spectrum graph</li>
-    </ul>
+    <p>Each range is averaged and normalized to 0 and 1 which can be used to change the textures<br>
+        You can toggle each range with 1, 2, 3 (We only use indices 0-300, since the upper end is often unused).</p>
+</div>
+
+<div>
+    <h2>Generating Procedural Textures</h2>
+    <p>Three different textures are generated every frame, each responding to the audio.</p>
+
+    <h3>Left Panel - Marble Texture</h3>
+    <p>Uses a Perlin noise algorithm to morph the base sine pattern into an interesting marble design.
+        Each band of frequencies affect it differently, bass creates large warps, mid creating smaller swirls,
+        and high creates smaller fuzz.</p>
+
+    <h3>Center Panel - Turbulence Visualization</h3>
+    <p>Displays the turbulence function output for each range as color. Red for bass, green for mid, blue for high.
+        Helps to show how each region of the texture is getting affected by the Perlin noise.</p>
+
+    <h3>Right Panel - Frequency Graph</h3>
+    <p>Displays audio data as a bar graph, helping to show how intense each range of frequencies is.</p>
+</div>
+
+<div>
+    <h2>The Noise Algorithm</h2>
+
+    <h3>Base Random Noise</h3>
+    <p>We create a base grid of random static noise at the beginning that we'll use throughout. This static
+        noise is important to help influence the texture into an interesting marble pattern.</p>
+
+    <h3>Smooth Noise Function</h3>
+    <p>Since we generate random static, we need to smooth it out so it doesn't look like static.
+        We use bilinear interpolation to do this. We use fractional coordinates, then take the average color
+        of the four nearest points weighted by how close the fractional coordinate it. This helps make smoother
+        color transitions instead of harsh static.</p>
+
+    <h3>Turbulence Function</h3>
+    <p>The turbulence function is important for creating multiple levels of detail, this is also where we use the
+        different bands of audio data. This function takes in an initial size, and samples the texture over a
+        (256/size)x(256/size) range. So for example, if initial size was 64, then it would sample over a 4x4 version
+        of the texture. So the bigger the initial size, the more large, widespread color patterns will affect it. While
+        smaller sizes will let finer detail affect the texture. <br><br>It'll keep doing this with smaller and smaller sizes
+        (starting at the initial size, dividing size by 2 at every loop) and stacking the values until it reaches a size of 1.
+        <br><br>Each range uses a different initial size (bass 64, mid 16, high 4) which makes each range have differing effects.</p>
+
+    <h3>Audio Integration</h3>
+    <p>After calculating each turbulence at each initial size, we multiply each final result by its respective audio range.
+        This is what allows the amount of bass, mid, and high frequencies to have weighted effects on the final output.</p>
+</div>
+
+<div>
+    <h2>Color Controls</h2>
+    <p>Using the controls above, you can change the color of the texture. You can also enable color mode, which will
+        change the color of the texture based on how much bass, mid, and high there is.</p>
+</div>
 </div>
 
 </body>

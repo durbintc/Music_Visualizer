@@ -994,8 +994,7 @@ function update(): void {
             albumArtUrl = await getCurrentAlbumArtURL();
             if (albumArtUrl) {
                 console.log('🎨 New album art:', albumArtUrl);
-                updateAlbumArt(albumArtUrl); // ← Add this line
-                // TODO: Update display with new album art
+                updateAlbumArt(albumArtUrl);
             }
         }, 3000);
 
