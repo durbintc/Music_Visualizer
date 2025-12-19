@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Make Textures - Spotify Edition</title>
+
+    <script id="vertex-shader" type="x-shader/x-vertex">#version 300 es
+
+      in vec4 vPosition;
+      in vec2 texCoord;
+
+      out vec2 ftexCoord;
+
+      uniform mat4 model_view;
+      uniform mat4 projection;
+      void main()
+      {	
+
+        ftexCoord = texCoord;
+
+        gl_Position = projection * model_view*vPosition;
+        
+
+      }
+
+    </script>
+
+    <script id="fragment-shader" type="x-shader/x-fragment">#version 300 es
+      precision mediump float;
+
+      in vec2 ftexCoord;
+      uniform sampler2D textureSampler;
+
+      out vec4  fColor;
+
+      void main()
+      {
+        fColor = texture(textureSampler, ftexCoord);
+      }
+
+    </script>
+
+    <script type="module" src="./src/maketexturefunctions.ts"></script>
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #121212;
+            color: #ffffff;
+            padding: 20px;
+        }
+        
+        .controls {
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        button {
+            background: #1db954;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 24px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        
+        button:hover {
+            background: #1ed760;
+        }
+        
+        button#spotify-login {
+            background: #191414;
+        }
+        
+        button#spotify-login:hover {
+            background: #282828;
+        }
+        
+        #status {
+            margin-top: 10px;
+            padding: 10px;
+            background: #282828;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+<div class="controls">
+    <h1>🎵 Music Visualizer with Spotify</h1>
+    <div style="margin-bottom: 15px;">
+        <button id="spotify-login">🎧 Login with Spotify</button>
+        <button id="retry-audio" style="background: #ff6b00;">🔄 Retry Audio Connection</button>
+    </div>
+    <div style="margin-bottom: 15px;">
+        <label for="playlist-input" style="display: block; margin-bottom: 5px; font-weight: bold;">Playlist URL or ID (optional):</label>
+        <input 
+            type="text" 
+            id="playlist-input" 
+            placeholder="Leave empty to resume current playback, or paste playlist URL/ID"
+            style="width: 500px; padding: 8px; border: 2px solid #1db954; border-radius: 4px; background: #282828; color: white; font-size: 14px;"
+            value=""
+        />
+        <button id="start">▶️ Play</button>
+        <button id="pause" style="background: #ff0000;">⏸️ Pause</button>
+    </div>
+    <div style="margin-bottom: 15px;">
+        <button id="previous" style="background: #535353;">⏮️ Previous</button>
+        <button id="next" style="background: #535353;">⏭️ Next</button>
+        <button id="shuffle" style="background: #1db954;">🔀 Shuffle</button>
+    </div>
+    <div id="status">Status: Ready. Login with Spotify or use microphone/MP3.</div>
+</div>
+
+<audio id="music" src="../ponyboy.mp3" crossorigin="anonymous" style="display: none;"></audio>
+<canvas id="gl-canvas" width="1500" height="512">
+    Sorry; your web browser doesn't support HTML5's canvas element.
+</canvas>
+
+<div class="controls">
+    <h2>⌨️ Controls</h2>
+    <ul>
+        <li><strong>1</strong> = toggle bass frequencies</li>
+        <li><strong>2</strong> = toggle mid frequencies</li>
+        <li><strong>3</strong> = toggle high frequencies</li>
+        <li><strong>↑</strong> = zoom in</li>
+        <li><strong>↓</strong> = zoom out</li>
+        <li><strong>C</strong> = toggle color mode</li>
+        <li><strong>R/G/B</strong> = increase red/green/blue</li>
+        <li><strong>T/H/N</strong> = decrease red/green/blue</li>
+        <li><strong>Mouse drag</strong> = rotate view</li>
+    </ul>
+</div>
+
+<div class="controls">
+    <h2>🎮 How to Use</h2>
+    <ol>
+        <li><strong>Login with Spotify</strong> → Authorize the app (requires Premium)</li>
+        <li><strong>Choose playback mode:</strong>
+            <ul>
+                <li><strong>Option A - Resume Current Playback:</strong>
+                    <ul>
+                        <li>Play something in your Spotify app (phone, desktop, web)</li>
+                        <li>Leave the playlist field <strong>empty</strong></li>
+                        <li>Click "▶️ Play" to visualize what's currently playing</li>
+                    </ul>
+                </li>
+                <li><strong>Option B - Start New Playlist:</strong>
+                    <ul>
+                        <li>Go to Spotify → Find any playlist → Right-click → Share → Copy link</li>
+                        <li>Paste the link in the input box</li>
+                        <li>Click "▶️ Play" to start that playlist</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li><strong>Grant microphone access</strong> when prompted (to capture audio for visualization)</li>
+        <li><strong>Enjoy!</strong> → Use Previous/Next/Shuffle to control playback</li>
+    </ol>
+    
+    <h3>⚠️ Important Note About Spotify Audio:</h3>
+    <p>Due to Spotify Web Playback SDK limitations, the visualizer uses your <strong>microphone</strong> to capture audio from your speakers. This means:</p>
+    <ul>
+        <li>✅ You'll need to grant microphone permission when prompted</li>
+        <li>✅ Turn up your volume so the microphone can hear the music</li>
+        <li>✅ For best results, place microphone near speakers or use headphones with mic</li>
+        <li>💡 <strong>Pro tip:</strong> Enable "Stereo Mix" or "System Audio Loopback" in your system settings for direct audio capture without microphone!</li>
+    </ul>
+    
+    <h3>🎧 How to Enable Stereo Mix (Windows):</h3>
+    <ol>
+        <li>Right-click speaker icon → Sounds → Recording tab</li>
+        <li>Right-click empty space → Show Disabled Devices</li>
+        <li>Enable "Stereo Mix" and set as default recording device</li>
+        <li>Refresh this page and grant microphone permission</li>
+    </ol>
+    
+    <h3>🎧 Mac Users:</h3>
+    <p>Install a free audio routing tool like <strong>BlackHole</strong> or <strong>Loopback</strong> to route system audio to the browser.</p>
+
+    
+    <h3>🔄 Fallback Modes:</h3>
+    <p>If Spotify isn't available, the visualizer will automatically fall back to:</p>
+    <ul>
+        <li><strong>Microphone input</strong> (if <code>spotify = true</code> in code)</li>
+        <li><strong>MP3 file</strong> (if <code>spotify = false</code> in code)</li>
+    </ul>
+</div>
+
+<div class="controls">
+    <h2>🎨 What's Happening</h2>
+    <h3>Audio Processing</h3>
+    <p>The visualizer captures audio from Spotify using the Web Playback SDK and Web Audio API. 
+    The audio is analyzed into 512 frequency bins every 32ms, then divided into three ranges:</p>
+    <ul>
+        <li><strong>Bass (0-100):</strong> Drives large, sweeping movements</li>
+        <li><strong>Mid (100-200):</strong> Controls flowing details and melody</li>
+        <li><strong>High (200-300):</strong> Creates fine texture and energy</li>
+    </ul>
+    
+    <h3>Three Real-Time Textures</h3>
+    <ul>
+        <li><strong>Left:</strong> Marble texture using Perlin noise turbulence</li>
+        <li><strong>Center:</strong> Raw octave visualization (RGB = bass/mid/high)</li>
+        <li><strong>Right:</strong> Classic frequency spectrum graph</li>
+    </ul>
+</div>
+
+</body>
+</html>
