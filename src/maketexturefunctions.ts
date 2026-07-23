@@ -396,60 +396,57 @@ async function skipToPrevious(): Promise<void> {
 }
 
 let spotifyAudioConnected = false;
+let audioConnectPromise: Promise<void> | null = null;
 
 async function connectSpotifyToAnalyser(): Promise<void> {
     if (spotifyAudioConnected) {
         console.log('Audio already connected');
         return;
     }
-
-    console.log('🎤 Connecting audio for Spotify visualization...');
-    console.log('⚠️ Note: Spotify Web Playback SDK does not expose its audio stream directly.');
-    console.log('💡 Solution: Using microphone to capture audio from your speakers/headphones');
-    
-    const statusEl = document.getElementById('status');
-    if (statusEl) statusEl.textContent = 'Status: Grant microphone access to visualize audio...';
-    
-    try {
-        // Use microphone to capture the audio playing from speakers
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-            audio: {
-                echoCancellation: false,  // Important: don't cancel the music!
-                noiseSuppression: false,   // Keep all audio
-                autoGainControl: false,    // Don't adjust volume
-                sampleRate: 48000
-            } 
-        });
-        
-        const source = audioCtx.createMediaStreamSource(stream);
-        source.connect(analyser);
-        // Don't connect to destination to avoid feedback loop
-        
-        spotifyAudioConnected = true;
-        console.log('✅ Microphone connected! Visualizer will respond to audio from speakers.');
-        
-        if (statusEl) statusEl.textContent = 'Status: 🎵 Visualizing! (Using microphone input)';
-        
-        // Test after 1 second
-        setTimeout(() => {
-            analyser.getByteFrequencyData(dataArray);
-            const sum = dataArray.reduce((a, b) => a + b, 0);
-            console.log('🔊 Audio input test - Sum:', sum, 'First 10 values:', Array.from(dataArray.slice(0, 10)));
-            if (sum === 0) {
-                console.log('⚠️ No audio detected. Make sure:');
-                console.log('  1. Spotify is playing');
-                console.log('  2. Volume is up');
-                console.log('  3. Microphone is near speakers OR use stereo mix/loopback');
-            }
-        }, 1000);
-        
-    } catch (error) {
-        console.error('❌ Failed to access microphone:', error);
-        if (statusEl) statusEl.textContent = 'Status: ❌ Microphone access denied. Grant permission to visualize.';
-        
-        // Show helpful message
-        alert('To visualize Spotify audio:\n\n1. Grant microphone permission\n2. Turn up your volume\n3. The visualizer will respond to audio from your speakers\n\nAlternative: Enable "Stereo Mix" or "Loopback" in your system audio settings for better quality.');
+    if (audioConnectPromise) {
+        console.log('Audio connection already in progress');
+        return audioConnectPromise;
     }
+
+    audioConnectPromise = (async () => {
+        const statusEl = document.getElementById('status');
+        if (statusEl) statusEl.textContent = 'Status: Select this tab and check "Share audio"...';
+
+        try {
+            const stream = await navigator.mediaDevices.getDisplayMedia({
+                video: true,
+                audio: true,
+                preferCurrentTab: true
+            } as DisplayMediaStreamOptions);
+
+            stream.getVideoTracks().forEach(track => track.stop());
+            const audioTracks = stream.getAudioTracks();
+            if (audioTracks.length === 0) {
+                alert('No audio captured — make sure "Share tab audio" was checked.');
+                return;
+            }
+
+            const source = audioCtx.createMediaStreamSource(stream);
+            source.connect(analyser);
+
+            spotifyAudioConnected = true;
+            console.log('✅ Tab audio connected via getDisplayMedia');
+            if (statusEl) statusEl.textContent = 'Status: 🎵 Visualizing! (tab audio capture)';
+
+            audioTracks[0].addEventListener('ended', () => {
+                spotifyAudioConnected = false;
+                console.log('Tab audio sharing stopped');
+            });
+
+        } catch (error) {
+            console.error('❌ Tab audio capture failed or was denied:', error);
+            if (statusEl) statusEl.textContent = 'Status: ❌ Tab audio denied.';
+        } finally {
+            audioConnectPromise = null;
+        }
+    })();
+
+    return audioConnectPromise;
 }
 
 async function getCurrentAlbumArtURL(): Promise<string | null> {
@@ -990,13 +987,13 @@ function makeAllTextures(width: number, height: number): void {
 function update(): void {
     analyser.getByteFrequencyData(dataArray);
 
-    setTimeout(async () => {
-            albumArtUrl = await getCurrentAlbumArtURL();
-            if (albumArtUrl) {
-                console.log('🎨 New album art:', albumArtUrl);
-                updateAlbumArt(albumArtUrl);
-            }
-        }, 3000);
+    // setTimeout(async () => {
+    //         albumArtUrl = await getCurrentAlbumArtURL();
+    //         if (albumArtUrl) {
+    //             console.log('🎨 New album art:', albumArtUrl);
+    //             updateAlbumArt(albumArtUrl);
+    //         }
+    //     }, 3000);
 
     // Debug: Log audio data every 3 seconds
     if (Math.random() < 0.1) { // ~10% chance = roughly every 3 seconds
